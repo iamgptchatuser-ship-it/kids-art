@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>우리집 그림 보관함</title>
+<meta name="theme-color" content="#F3F5F9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161F" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
+<style>
+/* Offline, on-device version.
+   Layout: a fridge door. Sticky header with two views (album by month, growth by age);
+   drawings hang on a paper-toned wall in a masonry column flow; sheets slide up for forms. */
+:root {
+  --wall: #F3F5F9;
+  --paper: #FFFFFF;
+  --ink: #1E2238;
+  --ink-soft: #5C6280;
+  --line: #DDE1EC;
+  --accent: #2F62E0;
+  --accent-ink: #FFFFFF;
+  --danger: #C8372D;
+  --shadow: 0 1px 2px rgb(30 34 56 / .08), 0 6px 18px rgb(30 34 56 / .07);
+  --k0: #E4572E; --k1: #2E86DE; --k2: #3B9E5F; --k3: #8E5CF7; --k4: #D99A00;
+  --display: "Jua", "IBM Plex Sans KR", system-ui, sans-serif;
+  --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --wall: #14161F; --paper: #1D2030; --ink: #ECEEF6; --ink-soft: #A2A7BF; --line: #2E3247;
+  --accent: #7A9BFF; --accent-ink: #0E1220; --danger: #FF7B6E;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px rgb(0 0 0 / .3);
+  --k0: #FF8A66; --k1: #6FB2FF; --k2: #6CCB8E; --k3: #B597FF; --k4: #F2C14E;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --wall: #14161F; --paper: #1D2030; --ink: #ECEEF6; --ink-soft: #A2A7BF; --line: #2E3247;
+  --accent: #7A9BFF; --accent-ink: #0E1220; --danger: #FF7B6E;
+  --shadow: 0 1px 2px rgb(0 0 0 / .4), 0 6px 18px rgb(0 0 0 / .3);
+  --k0: #FF8A66; --k1: #6FB2FF; --k2: #6CCB8E; --k3: #B597FF; --k4: #F2C14E;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--wall); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--wall); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; text-wrap: balance; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--wall) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 12px; padding-block: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; flex: 1 1 auto; min-width: 0; }
+.brand h1 { font-size: 24px; line-height: 1.1; }
+.brand .count { color: var(--ink-soft); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 8px 14px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.btn:hover { border-color: var(--ink-soft); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.danger { color: var(--danger); }
+.btn.danger.armed { background: var(--danger); color: var(--paper); border-color: var(--danger); }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.tabs { display: flex; gap: 4px; padding-block: 0 10px; }
+.tab { border: 0; background: none; padding: 6px 12px; border-radius: 8px; color: var(--ink-soft); font-weight: 500; }
+.tab[aria-selected="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; padding-block: 16px 4px; }
+.chip { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 5px 12px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--wall); }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+
+.note { margin-top: 16px; padding: 10px 14px; border-radius: var(--r); background: var(--paper); border: 1px dashed var(--line); color: var(--ink-soft); font-size: 14px; }
+
+main { padding-block: 4px 64px; }
+.month { margin-top: 28px; }
+.month-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.month-head h2 { font-size: 21px; }
+.month-head span { color: var(--ink-soft); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+.wall { columns: 2; column-gap: 12px; }
+@media (min-width: 640px) { .wall { columns: 3; column-gap: 16px; } }
+@media (min-width: 960px) { .wall { columns: 4; } }
+.work { break-inside: avoid; margin: 0 0 12px; display: block; width: 100%; border: 0; padding: 8px 8px 10px; background: var(--paper); border-radius: 6px; box-shadow: var(--shadow); text-align: left; transition: transform .15s ease; }
+.work:hover { transform: rotate(-.6deg) translateY(-2px); }
+.work img { display: block; width: 100%; height: auto; border-radius: 3px; background: var(--wall); }
+.work .cap { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; min-width: 0; }
+.work .cap b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+.work .cap time { color: var(--ink-soft); font-variant-numeric: tabular-nums; flex: none; }
+
+.empty { margin: 40px auto; max-width: 440px; text-align: center; padding: 32px 20px; background: var(--paper); border-radius: 14px; box-shadow: var(--shadow); }
+.empty h2 { font-size: 22px; margin-bottom: 8px; }
+.empty p { color: var(--ink-soft); margin: 0 0 18px; }
+.frame-art { display: block; margin: 0 auto 16px; }
+
+/* growth view */
+.g-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-block: 16px 4px; }
+.g-bar .chips { padding-block: 0; }
+.tpl { display: flex; gap: 6px; flex-wrap: wrap; }
+.tpl button { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 6px 10px 5px; font-size: 12px; color: var(--ink-soft); }
+.tpl button svg { display: block; }
+.tpl button[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); box-shadow: 0 0 0 1px var(--accent); }
+.g-summary { margin-top: 18px; display: flex; gap: 10px 18px; flex-wrap: wrap; align-items: baseline; }
+.g-summary h2 { font-size: 26px; }
+.g-summary span { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.age-head { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; }
+.age-head h3 { font-size: 22px; }
+.age-head span { color: var(--ink-soft); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* template: timeline */
+.tl { position: relative; margin-top: 18px; padding-left: 28px; }
+.tl::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+.tl .age-head { position: relative; margin-left: -28px; padding-left: 28px; }
+.tl .age-head::before { content: ""; position: absolute; left: 1px; top: 50%; width: 16px; height: 16px; border-radius: 50%; transform: translateY(-50%); background: var(--kid); border: 3px solid var(--wall); }
+.tl-item { position: relative; display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 14px; align-items: start; margin-bottom: 18px; border: 0; background: none; padding: 0; text-align: left; width: 100%; }
+.tl-item::before { content: ""; position: absolute; left: -24px; top: 14px; width: 8px; height: 8px; border-radius: 50%; background: var(--ink-soft); }
+.tl-item .pic { background: var(--paper); padding: 6px; border-radius: 6px; box-shadow: var(--shadow); }
+.tl-item img { display: block; width: 100%; height: auto; border-radius: 3px; }
+.tl-item .txt { display: grid; gap: 2px; padding-top: 4px; min-width: 0; }
+.tl-item time { font-variant-numeric: tabular-nums; color: var(--ink-soft); font-size: 13px; }
+.tl-item b { font-weight: 600; }
+.tl-item p { margin: 4px 0 0; color: var(--ink-soft); white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .tl-item { grid-template-columns: 1fr; gap: 6px; } }
+
+/* template: side by side */
+.cmp-pair { margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cmp-pair figure { margin: 0; background: var(--paper); border-radius: 10px; box-shadow: var(--shadow); padding: 10px; display: grid; gap: 8px; }
+.cmp-pair .box { aspect-ratio: 1; max-width: 100%; background: var(--wall); border-radius: 6px; display: grid; place-items: center; overflow: hidden; }
+.cmp-pair img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.cmp-pair figcaption { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.cmp-pair figcaption b { display: block; color: var(--ink); font-family: var(--display); font-weight: 400; font-size: 18px; }
+.film { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+.film button { flex: none; height: 150px; border: 0; padding: 5px; background: var(--paper); border-radius: 6px; box-shadow: var(--shadow); scroll-snap-align: start; display: grid; gap: 4px; }
+.film img { height: 118px; width: auto; max-width: 70vw; object-fit: contain; border-radius: 3px; display: block; }
+.film time { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+/* template: scrapbook */
+.scrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 22px 16px; }
+@media (min-width: 640px) { .scrap { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+.polaroid { position: relative; border: 0; background: var(--paper); padding: 10px 10px 14px; box-shadow: var(--shadow); text-align: left; transform: rotate(var(--tilt, 0deg)); transition: transform .15s ease; }
+.polaroid:hover { transform: rotate(0deg) scale(1.02); }
+.polaroid::before { content: ""; position: absolute; top: -9px; left: 50%; width: 56px; height: 18px; transform: translateX(-50%) rotate(-3deg); background: color-mix(in srgb, var(--kid) 45%, transparent); }
+.polaroid .box { aspect-ratio: 1; background: var(--wall); display: grid; place-items: center; overflow: hidden; }
+.polaroid img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.polaroid .hand { font-family: var(--display); font-size: 17px; margin-top: 8px; line-height: 1.25; overflow-wrap: anywhere; }
+.polaroid .memo { font-size: 13px; color: var(--ink-soft); margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.polaroid time { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .polaroid, .polaroid:hover { transform: none; transition: none; } }
+
+/* sheets */
+.scrim { position: fixed; inset: 0; z-index: 20; background: rgb(10 12 24 / .5); display: flex; align-items: flex-end; justify-content: center; }
+@media (min-width: 720px) { .scrim { align-items: center; padding: 24px; } }
+.sheet { background: var(--wall); width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 20px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); display: grid; gap: 14px; }
+@media (min-width: 720px) { .sheet { border-radius: 16px; padding: 24px; } }
+.sheet.wide { max-width: 900px; }
+.sheet-head { display: flex; align-items: center; gap: 10px; }
+.sheet-head h2 { flex: 1; font-size: 22px; }
+.x { border: 0; background: none; font-size: 22px; line-height: 1; padding: 4px 8px; color: var(--ink-soft); }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 13px; color: var(--ink-soft); font-weight: 500; }
+.field input, .field select, .field textarea { width: 100%; border: 1px solid var(--line); background: var(--paper); border-radius: 8px; padding: 9px 11px; }
+.field textarea { min-height: 72px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.previews { display: flex; gap: 8px; overflow-x: auto; }
+.previews img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; flex: none; background: var(--paper); }
+.sheet-foot { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.status { font-size: 13px; color: var(--ink-soft); flex: 1; align-self: center; min-width: 0; }
+.big { background: var(--paper); border-radius: 10px; padding: 10px; display: grid; place-items: center; }
+.big img { max-height: 62vh; width: auto; max-width: 100%; border-radius: 4px; }
+.meta-list { display: grid; gap: 4px; }
+.meta-list .title { font-family: var(--display); font-size: 22px; }
+.meta-list .sub { color: var(--ink-soft); font-variant-numeric: tabular-nums; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.meta-list p { margin: 6px 0 0; white-space: pre-wrap; }
+.kid-list { display: grid; gap: 8px; }
+.kid-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--paper); border-radius: 10px; }
+.kid-item b { font-weight: 600; }
+.kid-item span { color: var(--ink-soft); font-size: 13px; flex: 1; }
+.color-pick { display: flex; gap: 8px; }
+.color-pick button { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; }
+.color-pick button[aria-pressed="true"] { border-color: var(--ink); }
+.hint { font-size: 13px; color: var(--ink-soft); margin: 0; }
+/* badges, album bar, memory */
+.work { position: relative; }
+.star-mark { position: absolute; top: 12px; right: 14px; color: var(--k4); font-size: 18px; line-height: 1; text-shadow: 0 0 3px var(--paper), 0 0 6px var(--paper); }
+.counts { color: var(--ink-soft); font-size: 12px; flex: none; font-variant-numeric: tabular-nums; }
+.a-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: space-between; padding-block: 16px 4px; }
+.a-bar .chips { padding-block: 0; }
+.bar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+.search { flex: 1 1 180px; width: 220px; max-width: 100%; border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 7px 14px; }
+.memory { margin-top: 16px; display: flex; gap: 14px; align-items: center; background: var(--paper); border-radius: 14px; box-shadow: var(--shadow); padding: 12px; border: 0; width: 100%; text-align: left; }
+.memory img { width: 88px; height: 88px; object-fit: cover; border-radius: 8px; flex: none; background: var(--wall); }
+.memory > div { min-width: 0; display: grid; gap: 2px; }
+.memory .k { font-family: var(--display); font-size: 20px; line-height: 1.2; }
+.memory .s { color: var(--ink-soft); font-size: 13px; font-variant-numeric: tabular-nums; }
+.note.call { border-style: solid; border-color: var(--accent); color: var(--ink); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.note.call span { flex: 1; min-width: 0; }
+.q { font-family: var(--display); font-size: 17px; line-height: 1.35; color: var(--ink); margin: 4px 0 0; overflow-wrap: anywhere; }
+.meta-list .q { font-size: 20px; }
+
+
+/* slideshow: always a dark screening room, in either theme */
+.show { position: fixed; inset: 0; z-index: 30; background: #0B0D16; color: #F2F3F8; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 12px; padding: calc(12px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.show .stagebox { display: grid; place-items: center; min-height: 0; }
+.show .stagebox img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; background: #FFFFFF; }
+.show .cap { text-align: center; display: grid; gap: 2px; }
+.show .cap b { font-family: var(--display); font-weight: 400; font-size: 24px; }
+.show .cap span { color: #A9AEC6; font-variant-numeric: tabular-nums; }
+.show .cap .q { color: #F2F3F8; }
+.show .ctl { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.show .ctl .pos { color: #A9AEC6; font-variant-numeric: tabular-nums; }
+.show button { background: rgb(255 255 255 / .12); color: #F2F3F8; border: 0; border-radius: 999px; padding: 8px 16px; }
+.show button:focus-visible { outline-color: #F2F3F8; }
+@media (prefers-reduced-motion: reduce) { .work { transition: none; } .work:hover { transform: none; } }
+
+body { margin: 0; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><h1>우리집 그림 보관함</h1><span class="count" id="count"></span></div>
+    <div class="actions">
+      <button class="btn" id="btn-kids">아이·설정</button>
+      <button class="btn" id="btn-backup" hidden>백업 받기</button>
+      <button class="btn" id="btn-camera" aria-label="사진 찍기">📷 찍기</button>
+      <button class="btn primary" id="btn-add">＋ 그림 추가</button>
+    </div>
+  </div>
+  <div class="wrap tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-album" aria-selected="true">앨범</button>
+    <button class="tab" role="tab" id="tab-growth" aria-selected="false">성장 기록</button>
+  </div>
+</header>
+<main class="wrap" id="main"></main>
+<input type="file" id="file" accept="image/*" multiple hidden>
+<input type="file" id="camera" accept="image/*" capture="environment" hidden>
+<input type="file" id="restore" accept=".zip,application/zip" hidden>
+<div id="overlay" hidden></div>
+<script>
+(() => {
+  // Everything lives on this device: IndexedDB holds kids, works and the image blobs; nothing is sent anywhere.
+  const S = { kids: [], works: [], view: 'album', filter: 'all', best: false, q: '',
+    growthKid: null, tpl: null, lastBackup: null, openId: null, ready: false, note: '' };
+  const $ = (s, r = document) => r.querySelector(s);
+  const el = (tag, attrs = {}, ...kids) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === 'text') n.textContent = v;
+      else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+      else if (k === 'style') n.style.cssText = v;
+      else n.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of kids.flat()) if (c != null) n.append(c);
+    return n;
+  };
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const isoDay = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const kidOf = id => S.kids.find(k => k.id === id);
+  const kidColor = k => `var(--k${(k?.color ?? 0) % 5})`;
+  const dotFor = k => el('span', { class: 'dot', style: `background:${kidColor(k)}` });
+  const fmtDate = d => { const [y, m, dd] = d.split('-'); return `${y}.${m}.${dd}`; };
+  const fmtBytes = b => b > 1e9 ? `${(b / 1e9).toFixed(1)}GB` : `${Math.round(b / 1e6)}MB`;
+
+  function ageAt(birth, date) {
+    if (!birth || !date) return null;
+    const [by, bm] = birth.split('-').map(Number), [y, m] = date.split('-').map(Number);
+    const months = (y - by) * 12 + (m - bm);
+    return months < 0 ? null : { y: Math.floor(months / 12), m: months % 12 };
+  }
+  const ageLabel = a => a ? `만 ${a.y}세${a.m ? ` ${a.m}개월` : ''}` : '';
+  const sorted = list => [...list].sort((a, b) => a.date === b.date ? (a.createdAt || '').localeCompare(b.createdAt || '') : a.date.localeCompare(b.date));
+  const ageText = (k, w) => { const a = ageLabel(ageAt(k?.birth, w.date)); return a ? ' · ' + a : ''; };
+  function relTime(iso) {
+    if (!iso) return '';
+    const m = (Date.now() - new Date(iso).getTime()) / 60000;
+    if (m < 60) return '방금';
+    if (m < 1440) return `${Math.floor(m / 60)}시간 전`;
+    if (m < 2880) return '어제';
+    if (m < 43200) return `${Math.floor(m / 1440)}일 전`;
+    return fmtDate(isoDay(iso));
+  }
+
+  // ---------- storage (IndexedDB) ----------
+  const STORES = ['kids', 'works', 'images', 'thumbs', 'meta'];
+  let dbp = null;
+  const openDB = () => dbp || (dbp = new Promise((ok, no) => {
+    const r = indexedDB.open('kids-art', 1);
+    r.onupgradeneeded = () => { for (const s of STORES) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s); };
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => no(r.error);
+  }));
+  const req = r => new Promise((ok, no) => { r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); });
+  async function run(stores, mode, fn) {
+    const t = (await openDB()).transaction(stores, mode);
+    const done = new Promise((ok, no) => { t.oncomplete = ok; t.onerror = () => no(t.error); t.onabort = () => no(t.error); });
+    const out = fn(...stores.map(s => t.objectStore(s)));
+    await done;
+    return out;
+  }
+  const DB = {
+    get: async (s, k) => { let v; await run([s], 'readonly', st => req(st.get(k)).then(x => { v = x; })); return v; },
+    put: (s, k, v) => run([s], 'readwrite', st => { st.put(v, k); }),
+    del: (s, k) => run([s], 'readwrite', st => { st.delete(k); }),
+    addWork: (w, image, thumb) => run(['works', 'images', 'thumbs'], 'readwrite', (ws, is, ts) => { ws.put(w, w.id); is.put(image, w.id); ts.put(thumb, w.id); }),
+    delWork: id => run(['works', 'images', 'thumbs'], 'readwrite', (ws, is, ts) => { ws.delete(id); is.delete(id); ts.delete(id); }),
+  };
+  async function allOf(s) { let v = []; await run([s], 'readonly', st => req(st.getAll()).then(x => { v = x; })); return v; }
+
+  // Object URLs for stored blobs, made once per image and kept for the session.
+  const urls = new Map(), loading = new Map();
+  function blobUrl(store, id) {
+    const key = store + ':' + id;
+    if (urls.has(key)) return Promise.resolve(urls.get(key));
+    if (!loading.has(key)) loading.set(key, DB.get(store, id).then(b => { const u = b ? URL.createObjectURL(b) : ''; urls.set(key, u); loading.delete(key); return u; }));
+    return loading.get(key);
+  }
+  function dropUrls(id) { for (const s of ['images', 'thumbs']) { const u = urls.get(s + ':' + id); if (u) URL.revokeObjectURL(u); urls.delete(s + ':' + id); } }
+  function pic(w, full, attrs = {}) {
+    const store = full ? 'images' : 'thumbs', key = store + ':' + w.id;
+    const im = el('img', { alt: w.title || '아이 그림', ...attrs });
+    if (urls.get(key)) im.src = urls.get(key);
+    else blobUrl(store, w.id).then(u => { if (u) im.src = u; else im.style.aspectRatio = '4/3'; });
+    return im;
+  }
+
+  async function loadAll() {
+    S.kids = (await allOf('kids')).sort((a, b) => (a.order || 0) - (b.order || 0));
+    S.works = (await allOf('works')).filter(w => w.date);
+    S.tpl = await DB.get('meta', 'growthTpl') || null;
+    S.lastBackup = await DB.get('meta', 'lastBackup') || null;
+  }
+  // Ask the browser not to clear this data when space runs low (granted silently for installed apps).
+  async function persist() { try { if (navigator.storage?.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch {} }
+
+  // ---------- render ----------
+  function render() {
+    $('#count').textContent = S.works.length ? `${S.works.length}점` : '';
+    $('#btn-backup').hidden = !S.works.length;
+    $('#tab-album').setAttribute('aria-selected', S.view === 'album');
+    $('#tab-growth').setAttribute('aria-selected', S.view === 'growth');
+    const main = $('#main');
+    const act = document.activeElement, fid = act && main.contains(act) && act.id ? act.id : null;
+    const caret = fid && typeof act.selectionStart === 'number' ? act.selectionStart : null;
+    main.replaceChildren();
+    build(main);
+    if (fid) { const n = document.getElementById(fid); if (n) { n.focus(); if (caret != null) try { n.setSelectionRange(caret, caret); } catch {} } }
+  }
+  function build(main) {
+    if (S.note) main.append(el('div', { class: 'note', text: S.note }));
+    if (!S.ready) return;
+    if (!S.kids.length) return main.append(emptyKids());
+    if (!S.works.length) return main.append(emptyWorks());
+    const stale = !S.lastBackup || Date.now() - new Date(S.lastBackup).getTime() > 30 * 864e5;
+    if (S.works.length >= 5 && stale)
+      main.append(el('div', { class: 'note call' },
+        el('span', { text: (S.lastBackup ? `마지막 백업이 ${relTime(S.lastBackup)}이에요.` : '아직 백업한 적이 없어요.') + ' 그림은 이 핸드폰에만 있어서, 백업 파일을 컴퓨터나 드라이브에 옮겨 두세요.' }),
+        el('button', { class: 'btn', text: '지금 백업', onclick: backup })));
+    main.append(S.view === 'album' ? albumView() : growthView());
+  }
+
+  const frameArt = () => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 120 90'); svg.setAttribute('width', '120'); svg.setAttribute('height', '90');
+    svg.setAttribute('class', 'frame-art'); svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = '<rect x="14" y="10" width="92" height="70" rx="4" fill="var(--paper)" stroke="var(--line)" stroke-width="2"/>' +
+      '<rect x="48" y="4" width="24" height="10" rx="2" fill="var(--k4)" opacity=".7"/>' +
+      '<circle cx="82" cy="30" r="9" fill="var(--k4)"/>' +
+      '<path d="M22 70 L46 42 L62 58 L72 48 L98 70 Z" fill="var(--k2)"/>' +
+      '<path d="M30 66 q6 -10 12 0" stroke="var(--k0)" stroke-width="3" fill="none" stroke-linecap="round"/>';
+    return svg;
+  };
+  function emptyKids() {
+    return el('section', { class: 'empty' }, frameArt(),
+      el('h2', { text: '아이부터 등록해 주세요' }),
+      el('p', { text: '이름과 태어난 달을 넣으면 그림마다 "만 5세 3개월"처럼 그린 나이가 붙어요. 그림과 정보는 이 핸드폰에만 저장돼요.' }),
+      el('div', { class: 'sheet-foot', style: 'justify-content:center' },
+        el('button', { class: 'btn', text: '백업에서 복원', onclick: pickRestore }),
+        el('button', { class: 'btn primary', text: '아이 등록하기', onclick: openKids })));
+  }
+  function emptyWorks() {
+    return el('section', { class: 'empty' }, frameArt(),
+      el('h2', { text: '첫 그림을 걸어 볼까요?' }),
+      el('p', { text: '그림을 사진으로 찍어 올리면 달마다 앨범이 만들어지고, 성장 기록에서 그림이 어떻게 변하는지 넘겨 볼 수 있어요.' }),
+      el('div', { class: 'sheet-foot', style: 'justify-content:center' },
+        el('button', { class: 'btn', text: '📷 찍기', onclick: () => pickFiles(true) }),
+        el('button', { class: 'btn primary', text: '＋ 사진 고르기', onclick: () => pickFiles(false) })));
+  }
+
+  function kidChips(withAll, current, onPick) {
+    const wrap = el('div', { class: 'chips', role: 'group', 'aria-label': '아이 선택' });
+    if (withAll) wrap.append(el('button', { class: 'chip', 'aria-pressed': current === 'all', text: '전체', onclick: () => onPick('all') }));
+    for (const k of S.kids) wrap.append(el('button', { class: 'chip', 'aria-pressed': current === k.id, onclick: () => onPick(k.id) }, dotFor(k), k.name));
+    return wrap;
+  }
+
+  function workCard(w) {
+    const k = kidOf(w.kidId);
+    return el('button', { class: 'work', onclick: () => openDetail(w.id), 'aria-label': `${k?.name || ''} ${w.title || '그림'} ${w.date}` },
+      w.starred ? el('span', { class: 'star-mark', text: '★', title: '베스트' }) : null,
+      pic(w, false, { loading: 'lazy', width: w.w, height: w.h }),
+      el('div', { class: 'cap' }, dotFor(k), el('b', { text: w.title || k?.name || '그림' }),
+        el('time', { text: w.date.slice(5).replace('-', '.') })));
+  }
+
+  // One drawing up top each visit: same day in an earlier year, else about a month ago, else a pick fixed for today.
+  function memoryCard() {
+    if (S.works.length < 3) return null;
+    const t = today(), now = new Date(t).getTime();
+    let pick = null, label = '';
+    const past = sorted(S.works.filter(w => w.date.slice(5) === t.slice(5) && w.date < t));
+    if (past.length) { pick = past[past.length - 1]; label = `${Number(t.slice(0, 4)) - Number(pick.date.slice(0, 4))}년 전 오늘`; }
+    if (!pick) {
+      const m = sorted(S.works.filter(w => { const d = (now - new Date(w.date).getTime()) / 864e5; return d >= 27 && d <= 34; }));
+      if (m.length) { pick = m[0]; label = '한 달 전 이맘때'; }
+    }
+    if (!pick) {
+      let h = 7; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      const all = sorted(S.works); pick = all[h % all.length]; label = '오늘의 한 장';
+    }
+    const k = kidOf(pick.kidId);
+    return el('button', { class: 'memory', onclick: () => openDetail(pick.id) },
+      pic(pick, false, { alt: '' }),
+      el('div', {}, el('div', { class: 'k', text: label }),
+        el('div', { class: 's', text: `${k?.name || ''} · ${fmtDate(pick.date)}${ageText(k, pick)}` }),
+        pick.title ? el('div', { text: pick.title }) : null));
+  }
+
+  function albumView() {
+    const frag = document.createDocumentFragment();
+    const chips = kidChips(true, S.filter, id => { S.filter = id; render(); });
+    chips.append(el('button', { class: 'chip', 'aria-pressed': S.best, onclick: () => { S.best = !S.best; render(); } }, '★ 베스트'));
+    const q = el('input', { class: 'search', id: 'album-search', type: 'search', placeholder: '제목·메모 검색', value: S.q, 'aria-label': '그림 검색' });
+    q.addEventListener('input', () => { S.q = q.value; render(); });
+    const qq = S.q.trim().toLowerCase();
+    const list = sorted(S.works.filter(w => (S.filter === 'all' || w.kidId === S.filter) && (!S.best || w.starred) &&
+      (!qq || [w.title, w.note, w.quote, kidOf(w.kidId)?.name].join(' ').toLowerCase().includes(qq)))).reverse();
+    frag.append(el('div', { class: 'a-bar' }, chips, el('div', { class: 'bar-right' }, q,
+      el('button', { class: 'btn', text: '▶ 슬라이드쇼', disabled: !list.length || null, onclick: () => slideshow([...list].reverse()) }))));
+    if (S.filter === 'all' && !S.best && !qq) { const m = memoryCard(); if (m) frag.append(m); }
+    if (!list.length) { frag.append(el('div', { class: 'note', text: qq ? '찾는 그림이 없어요.' : S.best ? '아직 베스트로 고른 그림이 없어요. 그림을 열고 ☆ 베스트를 눌러 보세요.' : '이 아이의 그림은 아직 없어요.' })); return frag; }
+    const groups = new Map();
+    for (const w of list) { const key = w.date.slice(0, 7); if (!groups.has(key)) groups.set(key, []); groups.get(key).push(w); }
+    for (const [key, ws] of groups) {
+      const [y, m] = key.split('-');
+      frag.append(el('section', { class: 'month' },
+        el('div', { class: 'month-head' }, el('h2', { text: `${y}년 ${Number(m)}월` }), el('span', { text: `${ws.length}점` })),
+        el('div', { class: 'wall' }, ws.map(workCard))));
+    }
+    return frag;
+  }
+
+  // Growth templates: same data (one kid, oldest first, grouped by age), four ways to lay it out.
+  const TEMPLATES = [
+    { id: 'wall', name: '벽걸이', icon: '<rect x="1" y="1" width="9" height="12" rx="1"/><rect x="12" y="1" width="9" height="7" rx="1"/><rect x="23" y="1" width="9" height="10" rx="1"/><rect x="1" y="15" width="9" height="6" rx="1"/><rect x="12" y="10" width="9" height="11" rx="1"/><rect x="23" y="13" width="9" height="8" rx="1"/>' },
+    { id: 'timeline', name: '타임라인', icon: '<rect x="3" y="1" width="2" height="20"/><circle cx="4" cy="4" r="2.5"/><rect x="9" y="1" width="9" height="7" rx="1"/><rect x="20" y="2" width="12" height="2"/><circle cx="4" cy="15" r="2.5"/><rect x="9" y="12" width="9" height="7" rx="1"/><rect x="20" y="13" width="12" height="2"/>' },
+    { id: 'compare', name: '나란히', icon: '<rect x="1" y="1" width="14" height="11" rx="1"/><rect x="18" y="1" width="14" height="11" rx="1"/><rect x="1" y="15" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><rect x="17" y="15" width="6" height="6" rx="1"/><rect x="25" y="15" width="6" height="6" rx="1"/>' },
+    { id: 'scrap', name: '스크랩북', icon: '<g transform="rotate(-6 8 11)"><rect x="2" y="3" width="12" height="15" rx="1"/></g><g transform="rotate(5 25 11)"><rect x="19" y="3" width="12" height="15" rx="1"/></g>' },
+  ];
+  const currentTpl = () => TEMPLATES.some(x => x.id === S.tpl) ? S.tpl : 'wall';
+  function chooseTpl(id) { S.tpl = id; render(); DB.put('meta', 'growthTpl', id).catch(console.warn); }
+  function tplPicker() {
+    const cur = currentTpl();
+    return el('div', { class: 'tpl', role: 'group', 'aria-label': '보기 템플릿' }, TEMPLATES.map(t => {
+      const b = el('button', { 'aria-pressed': t.id === cur, onclick: () => chooseTpl(t.id) });
+      const ns = 'http://www.w3.org/2000/svg', svg = document.createElementNS(ns, 'svg');
+      svg.setAttribute('viewBox', '0 0 33 22'); svg.setAttribute('width', '33'); svg.setAttribute('height', '22');
+      svg.setAttribute('fill', 'currentColor'); svg.setAttribute('aria-hidden', 'true'); svg.innerHTML = t.icon;
+      b.append(svg, t.name); return b;
+    }));
+  }
+
+  function growthView() {
+    const frag = document.createDocumentFragment();
+    if (!kidOf(S.growthKid)) S.growthKid = (S.kids.find(k => S.works.some(w => w.kidId === k.id)) || S.kids[0]).id;
+    const kid = kidOf(S.growthKid);
+    const list = sorted(S.works.filter(w => w.kidId === kid.id));
+    frag.append(el('div', { class: 'g-bar' }, kidChips(false, S.growthKid, id => { S.growthKid = id; render(); }),
+      el('div', { class: 'bar-right' }, tplPicker(), list.length ? el('button', { class: 'btn', text: '▶ 슬라이드쇼', onclick: () => slideshow(list) }) : null)));
+    if (!list.length) { frag.append(el('div', { class: 'note', text: `${kid.name}의 그림은 아직 없어요.` })); return frag; }
+    const first = list[0], last = list[list.length - 1];
+    const ageOf = w => ageLabel(ageAt(kid.birth, w.date));
+    const span = list.length > 1 ? `${fmtDate(first.date)} ${ageOf(first) ? `(${ageOf(first)})` : ''} → ${fmtDate(last.date)} ${ageOf(last) ? `(${ageOf(last)})` : ''}` : fmtDate(first.date);
+    frag.append(el('div', { class: 'g-summary' }, el('h2', { text: `${kid.name}의 그림 성장 기록` }), el('span', { text: `${list.length}점 · ${span}` })));
+    const groups = new Map();
+    for (const w of list) { const a = ageAt(kid.birth, w.date); const key = a ? `만 ${a.y}세` : `${w.date.slice(0, 4)}년`; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(w); }
+    const ageHead = (label, ws) => el('div', { class: 'age-head' }, el('h3', { text: label }), el('span', { text: `${ws.length}점 · ${fmtDate(ws[0].date).slice(0, 7)}~${fmtDate(ws[ws.length - 1].date).slice(0, 7)}` }));
+    const box = el('div', { style: `--kid:${kidColor(kid)}` });
+    const tpl = currentTpl();
+    if (tpl === 'wall') {
+      for (const [label, ws] of groups) box.append(ageHead(label, ws), el('div', { class: 'wall' }, ws.map(workCard)));
+    } else if (tpl === 'timeline') {
+      const tl = el('div', { class: 'tl' });
+      for (const [label, ws] of groups) {
+        tl.append(ageHead(label, ws));
+        for (const w of ws) tl.append(el('button', { class: 'tl-item', onclick: () => openDetail(w.id) },
+          el('div', { class: 'pic' }, pic(w, false, { loading: 'lazy', width: w.w, height: w.h })),
+          el('div', { class: 'txt' }, el('time', { text: `${fmtDate(w.date)} · ${ageOf(w) || ''}` }), w.title ? el('b', { text: w.title }) : null, w.quote ? el('div', { class: 'q', text: `“${w.quote}”` }) : null, w.note ? el('p', { text: w.note }) : null)));
+      }
+      box.append(tl);
+    } else if (tpl === 'compare') {
+      if (list.length > 1) {
+        const fig = (w, cap) => el('figure', { onclick: () => openDetail(w.id), style: 'cursor:zoom-in' },
+          el('div', { class: 'box' }, pic(w, true)),
+          el('figcaption', {}, el('b', { text: cap }), `${fmtDate(w.date)}${ageOf(w) ? ' · ' + ageOf(w) : ''}`));
+        box.append(el('div', { class: 'cmp-pair' }, fig(first, '처음 그림'), fig(last, '최근 그림')));
+      }
+      for (const [label, ws] of groups) box.append(ageHead(label, ws), el('div', { class: 'film' }, ws.map(w =>
+        el('button', { onclick: () => openDetail(w.id), 'aria-label': `${fmtDate(w.date)} ${w.title || ''}` },
+          pic(w, false, { alt: '', loading: 'lazy' }), el('time', { text: fmtDate(w.date).slice(5) })))));
+    } else {
+      for (const [label, ws] of groups) box.append(ageHead(label, ws), el('div', { class: 'scrap' }, ws.map(w => {
+        const tilt = ((parseInt(w.id.slice(-4), 36) || 0) % 7 - 3) * 0.8;
+        return el('button', { class: 'polaroid', style: `--tilt:${tilt}deg`, onclick: () => openDetail(w.id) },
+          el('div', { class: 'box' }, pic(w, false, { loading: 'lazy' })),
+          el('div', { class: 'hand', text: w.title || '제목 없음' }),
+          w.quote || w.note ? el('div', { class: 'memo', text: w.quote ? `“${w.quote}”` : w.note }) : null,
+          el('time', { text: `${fmtDate(w.date)}${ageOf(w) ? ' · ' + ageOf(w) : ''}` }));
+      })));
+    }
+    frag.append(box);
+    return frag;
+  }
+
+  // ---------- overlays ----------
+  function openSheet(content, wide) {
+    const ov = $('#overlay');
+    const sheet = el('div', { class: 'sheet' + (wide ? ' wide' : ''), role: 'dialog', 'aria-modal': 'true' }, content);
+    const scrim = el('div', { class: 'scrim', onclick: e => { if (e.target === scrim) closeSheet(); } }, sheet);
+    ov.replaceChildren(scrim); ov.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { const f = sheet.querySelector('input:not([type=file]),select,textarea,button.x'); f && f.focus(); }, 30);
+  }
+  function closeSheet() { S.openId = null; const ov = $('#overlay'); ov.hidden = true; ov.replaceChildren(); document.body.style.overflow = ''; }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#overlay').hidden) closeSheet(); });
+  const head = title => el('div', { class: 'sheet-head' }, el('h2', { text: title }), el('button', { class: 'x', 'aria-label': '닫기', text: '×', onclick: closeSheet }));
+  const field = (label, input) => el('div', { class: 'field' }, el('label', { for: input.id, text: label }), input);
+  const kidSelect = (id, value) => el('select', { id }, S.kids.map(k => el('option', { value: k.id, selected: k.id === value, text: k.name })));
+
+  // ---------- add works ----------
+  function pickFiles(camera) {
+    if (!S.kids.length) return openKids();
+    const f = $(camera ? '#camera' : '#file'); f.value = ''; f.click();
+  }
+  for (const id of ['#file', '#camera']) $(id).addEventListener('change', e => { const files = [...e.target.files]; if (files.length) openAdd(files); });
+
+  async function scaled(source, max, quality) {
+    const bmp = await createImageBitmap(source);
+    const sc = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * sc), h = Math.round(bmp.height * sc);
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close && bmp.close();
+    const blob = await new Promise((ok, no) => cv.toBlob(b => b ? ok(b) : no(new Error('encode')), 'image/jpeg', quality));
+    return { blob, w, h };
+  }
+  // Full image for viewing and backup, small one for the grids.
+  async function prepare(file) {
+    const full = await scaled(file, 1800, 0.86);
+    const thumb = await scaled(full.blob, 640, 0.8);
+    return { image: full.blob, thumb: thumb.blob, w: full.w, h: full.h };
+  }
+
+  function openAdd(files) {
+    const previews = files.map(f => URL.createObjectURL(f));
+    const lastKid = (() => { try { return localStorage.getItem('lastKid'); } catch { return null; } })();
+    const kidSel = kidSelect('add-kid', kidOf(lastKid) ? lastKid : (S.filter !== 'all' ? S.filter : S.kids[0].id));
+    const date = el('input', { type: 'date', id: 'add-date', value: files.length === 1 && files[0].lastModified ? isoDay(files[0].lastModified) : today(), max: today() });
+    const title = el('input', { id: 'add-title', placeholder: '예: 공룡 가족', maxlength: 60 });
+    const quote = el('input', { id: 'add-quote', placeholder: '예: 이건 우리 가족이 소풍 가는 거야', maxlength: 200 });
+    const note = el('textarea', { id: 'add-note', placeholder: '부모 메모 (재료, 그린 곳, 있었던 일)', maxlength: 1000 });
+    const status = el('span', { class: 'status', text: files.length > 1 ? `${files.length}장을 같은 아이·날짜로 올려요. 제목과 메모는 나중에 하나씩 고칠 수 있어요.` : '' });
+    const go = el('button', { class: 'btn primary', text: '저장' });
+    const done = () => previews.forEach(u => URL.revokeObjectURL(u));
+    go.addEventListener('click', async () => {
+      if (!date.value) { status.textContent = '날짜를 골라 주세요.'; return; }
+      go.disabled = true;
+      try { localStorage.setItem('lastKid', kidSel.value); } catch {}
+      let ok = 0, failed = 0, full = false;
+      for (const f of files) {
+        status.textContent = `${ok + failed + 1} / ${files.length} 저장하는 중…`;
+        try {
+          const p = await prepare(f);
+          const w = { id: uid(), kidId: kidSel.value, date: date.value, title: title.value.trim(), quote: quote.value.trim(), note: note.value.trim(), w: p.w, h: p.h, starred: false, createdAt: new Date().toISOString() };
+          await DB.addWork(w, p.image, p.thumb);
+          S.works.push(w); ok++;
+        } catch (err) {
+          failed++; console.error(err);
+          if (err && err.name === 'QuotaExceededError') { full = true; break; }
+        }
+      }
+      if (ok) persist();
+      render();
+      if (full) { status.textContent = `핸드폰 저장 공간이 부족해요. ${ok}장만 저장했어요.`; go.disabled = false; return; }
+      if (failed) { status.textContent = `${ok}장 저장했고 ${failed}장은 실패했어요. 사진 형식이 맞지 않을 수 있어요.`; go.textContent = '닫기'; go.disabled = false; go.onclick = () => { done(); closeSheet(); }; return; }
+      done(); closeSheet();
+      if (S.view === 'growth') { S.growthKid = kidSel.value; render(); }
+    });
+    openSheet([head(files.length > 1 ? `그림 ${files.length}장 추가` : '그림 추가'),
+      el('div', { class: 'previews' }, previews.map(u => el('img', { src: u, alt: '' }))),
+      el('div', { class: 'row2' }, field('누구 그림인가요', kidSel), field('그린 날', date)),
+      field('제목', title), field('아이가 한 말', quote), field('메모', note),
+      el('div', { class: 'sheet-foot' }, status, el('button', { class: 'btn', text: '취소', onclick: () => { done(); closeSheet(); } }), go)]);
+  }
+
+  // ---------- detail ----------
+  function openDetail(id) {
+    if (!S.works.some(x => x.id === id)) return;
+    S.openId = id;
+    const cur = () => S.works.find(x => x.id === id);
+    const save = async patch => { const w = { ...cur(), ...patch }; await DB.put('works', w.id, w); Object.assign(cur(), patch); render(); };
+    const view = () => {
+      const w = cur(); if (!w) { closeSheet(); return []; }
+      const k = kidOf(w.kidId);
+      const age = ageLabel(ageAt(k?.birth, w.date));
+      const star = el('button', { class: 'btn', text: w.starred ? '★ 베스트 해제' : '☆ 베스트' });
+      star.addEventListener('click', async () => {
+        star.disabled = true;
+        try { await save({ starred: !w.starred }); openSheet(view(), true); } catch { star.disabled = false; }
+      });
+      const del = el('button', { class: 'btn danger', text: '삭제' });
+      del.addEventListener('click', async () => {
+        if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = '한 번 더 누르면 삭제돼요'; return; }
+        del.disabled = true;
+        try {
+          await DB.delWork(w.id);
+          dropUrls(w.id);
+          S.works = S.works.filter(x => x.id !== w.id);
+          closeSheet(); render();
+        } catch (e) { del.disabled = false; del.textContent = '삭제하지 못했어요. 다시 눌러 주세요'; }
+      });
+      return [head(k ? `${k.name}의 그림` : '그림'),
+        el('div', { class: 'big' }, pic(w, true)),
+        el('div', { class: 'meta-list', style: `--kid:${kidColor(k)}` },
+          w.title ? el('div', { class: 'title', text: (w.starred ? '★ ' : '') + w.title }) : null,
+          el('div', { class: 'sub' }, dotFor(k), el('span', { text: fmtDate(w.date) }), age ? el('span', { text: '· ' + age }) : null),
+          w.quote ? el('div', { class: 'q', text: `“${w.quote}”` }) : null,
+          w.note ? el('p', { text: w.note }) : null),
+        el('div', { class: 'sheet-foot' }, del, star, el('button', { class: 'btn', text: '고치기', onclick: () => openSheet(edit(), true) }))];
+    };
+    const edit = () => {
+      const w = cur();
+      const kidSel = kidSelect('edit-kid', w.kidId);
+      const date = el('input', { type: 'date', id: 'edit-date', value: w.date, max: today() });
+      const title = el('input', { id: 'edit-title', value: w.title || '', maxlength: 60 });
+      const quote = el('input', { id: 'edit-quote', value: w.quote || '', maxlength: 200 });
+      const note = el('textarea', { id: 'edit-note', maxlength: 1000 }); note.value = w.note || '';
+      const status = el('span', { class: 'status' });
+      const ok = el('button', { class: 'btn primary', text: '저장' });
+      ok.addEventListener('click', async () => {
+        ok.disabled = true;
+        try {
+          await save({ kidId: kidSel.value, date: date.value || w.date, title: title.value.trim(), quote: quote.value.trim(), note: note.value.trim() });
+          openSheet(view(), true);
+        } catch (e) { ok.disabled = false; status.textContent = '저장하지 못했어요. 다시 시도해 주세요.'; }
+      });
+      return [head('그림 정보 고치기'), el('div', { class: 'row2' }, field('누구 그림인가요', kidSel), field('그린 날', date)),
+        field('제목', title), field('아이가 한 말', quote), field('메모', note),
+        el('div', { class: 'sheet-foot' }, status, el('button', { class: 'btn', text: '취소', onclick: () => openSheet(view(), true) }), ok)];
+    };
+    openSheet(view(), true);
+  }
+
+  // ---------- slideshow ----------
+  function slideshow(list) {
+    if (!list.length) return;
+    let i = 0, playing = !matchMedia('(prefers-reduced-motion: reduce)').matches, timer = null, lock = null;
+    const img = el('img', { alt: '' }), cap = el('div', { class: 'cap' }), pos = el('span', { class: 'pos' });
+    const playBtn = el('button', { text: playing ? '일시정지' : '재생' });
+    const ov = el('div', { class: 'show', role: 'dialog', 'aria-modal': 'true', 'aria-label': '슬라이드쇼' });
+    const show = n => {
+      i = (n + list.length) % list.length;
+      const w = list[i], k = kidOf(w.kidId), at = i;
+      img.alt = w.title || '아이 그림';
+      blobUrl('images', w.id).then(u => { if (i === at) img.src = u; });
+      cap.replaceChildren(el('b', { text: w.title || k?.name || '그림' }), el('span', { text: `${k?.name || ''} · ${fmtDate(w.date)}${ageText(k, w)}` }),
+        w.quote ? el('div', { class: 'q', text: `“${w.quote}”` }) : '');
+      pos.textContent = `${i + 1} / ${list.length}`;
+      blobUrl('images', list[(i + 1) % list.length].id);
+    };
+    const tick = () => { clearTimeout(timer); if (playing) timer = setTimeout(() => { show(i + 1); tick(); }, 3500); };
+    const go = d => { show(i + d); tick(); };
+    const toggle = () => { playing = !playing; playBtn.textContent = playing ? '일시정지' : '재생'; tick(); };
+    const close = () => { clearTimeout(timer); document.removeEventListener('keydown', key); ov.remove(); document.body.style.overflow = ''; try { lock && lock.release(); } catch {} };
+    const key = e => {
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowRight') go(1);
+      else if (e.key === 'ArrowLeft') go(-1);
+      else if (e.key === ' ') { e.preventDefault(); toggle(); }
+    };
+    playBtn.addEventListener('click', toggle);
+    ov.append(el('div', { class: 'ctl' }, pos, el('button', { text: '닫기 ×', onclick: close })),
+      el('div', { class: 'stagebox', onclick: toggle }, img),
+      el('div', {}, cap, el('div', { class: 'ctl', style: 'margin-top:12px' },
+        el('button', { text: '◀ 이전', onclick: () => go(-1) }), playBtn, el('button', { text: '다음 ▶', onclick: () => go(1) }))));
+    document.body.append(ov); document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', key);
+    try { navigator.wakeLock?.request('screen').then(l => { lock = l; }).catch(() => {}); } catch {}
+    show(0); tick();
+    playBtn.focus();
+  }
+
+  // ---------- kids & storage ----------
+  function openKids() {
+    let color = S.kids.length % 5;
+    const name = el('input', { id: 'kid-name', placeholder: '예: 서윤', maxlength: 20 });
+    const birth = el('input', { type: 'month', id: 'kid-birth', max: today().slice(0, 7) });
+    const status = el('span', { class: 'status' });
+    const picks = el('div', { class: 'color-pick', role: 'group', 'aria-label': '아이 색' });
+    const drawPicks = () => picks.replaceChildren(...[0, 1, 2, 3, 4].map(i => el('button', { type: 'button', 'aria-label': `색 ${i + 1}`, 'aria-pressed': i === color, style: `background:var(--k${i})`, onclick: () => { color = i; drawPicks(); } })));
+    drawPicks();
+    const list = el('div', { class: 'kid-list' }, S.kids.map(k => {
+      const n = S.works.filter(w => w.kidId === k.id).length;
+      const rm = el('button', { class: 'btn danger', text: '삭제', disabled: n > 0 || null, title: n ? '그림이 있는 아이는 삭제할 수 없어요' : null });
+      rm.addEventListener('click', async () => {
+        if (!rm.classList.contains('armed')) { rm.classList.add('armed'); rm.textContent = '확인'; return; }
+        try { await DB.del('kids', k.id); S.kids = S.kids.filter(x => x.id !== k.id); render(); openKids(); } catch { rm.textContent = '실패'; }
+      });
+      return el('div', { class: 'kid-item' }, dotFor(k), el('b', { text: k.name }),
+        el('span', { text: `${k.birth ? k.birth.replace('-', '년 ') + '월생' : '생일 미입력'} · 그림 ${n}점` }), rm);
+    }));
+    const add = el('button', { class: 'btn primary', text: '등록' });
+    add.addEventListener('click', async () => {
+      if (!name.value.trim()) { status.textContent = '이름을 적어 주세요.'; name.focus(); return; }
+      add.disabled = true;
+      const k = { id: uid(), name: name.value.trim(), birth: birth.value || '', color, order: Date.now() };
+      try { await DB.put('kids', k.id, k); S.kids.push(k); render(); openKids(); }
+      catch (e) { add.disabled = false; status.textContent = '등록하지 못했어요. 다시 시도해 주세요.'; }
+    });
+    const store = el('p', { class: 'hint', text: '저장 공간 확인 중…' });
+    (async () => {
+      try {
+        const [est, kept] = await Promise.all([navigator.storage.estimate(), navigator.storage.persisted()]);
+        store.textContent = `이 핸드폰에서 ${fmtBytes(est.usage || 0)} 사용 중 (남은 공간 약 ${fmtBytes(Math.max(0, (est.quota || 0) - (est.usage || 0)))}). ` +
+          (kept ? '저장 공간이 부족해도 지워지지 않게 보호되고 있어요.' : '홈 화면에 설치하면 저장 공간 부족으로 지워지지 않게 보호돼요.');
+      } catch { store.textContent = ''; }
+    })();
+    openSheet([head('아이·설정'), S.kids.length ? list : null,
+      el('h3', { text: '아이 추가', style: 'font-size:18px' }),
+      el('div', { class: 'row2' }, field('이름', name), field('태어난 달', birth)),
+      el('div', { class: 'field' }, el('label', { text: '색' }), picks),
+      el('p', { class: 'hint', text: '태어난 달은 그림마다 그린 나이를 계산하는 데만 써요.' }),
+      el('div', { class: 'sheet-foot' }, status, add),
+      el('h3', { text: '저장과 백업', style: 'font-size:18px' }),
+      el('p', { class: 'hint', text: '그림과 정보는 이 핸드폰 안에만 저장되고 어디로도 보내지 않아요. 앱을 지우거나 Chrome의 사이트 데이터를 지우면 함께 사라지니, 한 달에 한 번 백업 파일을 컴퓨터나 드라이브에 옮겨 두세요.' }),
+      store,
+      el('div', { class: 'sheet-foot' },
+        el('button', { class: 'btn', text: '백업에서 복원', onclick: pickRestore }),
+        el('button', { class: 'btn', text: '백업 받기', disabled: !S.works.length || null, onclick: () => { closeSheet(); backup(); } }))]);
+  }
+
+  // ---------- zip (stored, no compression: JPEGs don't shrink anyway) ----------
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = u8 => { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  function makeZip(entries) {
+    const enc = new TextEncoder(), d = new Date();
+    const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    const parts = [], central = [];
+    let off = 0;
+    for (const e of entries) {
+      const name = enc.encode(e.name), n = e.data.length, crc = crc32(e.data);
+      const h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+      h.setUint16(10, time, true); h.setUint16(12, date, true); h.setUint32(14, crc, true);
+      h.setUint32(18, n, true); h.setUint32(22, n, true); h.setUint16(26, name.length, true);
+      parts.push(h, name, e.data);
+      const c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint16(12, time, true); c.setUint16(14, date, true); c.setUint32(16, crc, true);
+      c.setUint32(20, n, true); c.setUint32(24, n, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+      central.push(c, name);
+      off += 30 + name.length + n;
+    }
+    const size = central.reduce((s, p) => s + p.byteLength, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true); end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+    end.setUint32(12, size, true); end.setUint32(16, off, true);
+    return new Blob([...parts, ...central, end], { type: 'application/zip' });
+  }
+  // Reads stored and deflated entries, so backups from the earlier online version restore too.
+  async function readZip(file) {
+    const buf = new Uint8Array(await file.arrayBuffer()), dv = new DataView(buf.buffer);
+    let e = buf.length - 22;
+    while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+    if (e < 0) throw new Error('not a zip');
+    const count = dv.getUint16(e + 10, true), dec = new TextDecoder(), out = new Map();
+    let p = dv.getUint32(e + 16, true);
+    for (let i = 0; i < count; i++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('bad zip');
+      const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true);
+      const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true), loc = dv.getUint32(p + 42, true);
+      const name = dec.decode(buf.subarray(p + 46, p + 46 + nlen));
+      const start = loc + 30 + dv.getUint16(loc + 26, true) + dv.getUint16(loc + 28, true);
+      let data = buf.subarray(start, start + size);
+      if (method === 8) data = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      else if (method !== 0) throw new Error('unsupported zip');
+      out.set(name, data);
+      p += 46 + nlen + xlen + clen;
+    }
+    return out;
+  }
+
+  // ---------- backup / restore ----------
+  async function backup() {
+    const btn = $('#btn-backup');
+    if (btn.disabled) return;
+    btn.disabled = true;
+    const label = btn.textContent;
+    try {
+      const safe = s => (s || '').replace(/[\\/:*?"<>|\n\r\t]/g, ' ').trim().slice(0, 40);
+      const list = sorted(S.works), out = [], entries = [];
+      let missing = 0;
+      for (let i = 0; i < list.length; i++) {
+        btn.textContent = `백업 ${i + 1}/${list.length}`;
+        const w = list[i], k = kidOf(w.kidId);
+        const file = `그림/${safe(k?.name) || '미분류'}/${w.date}_${safe(w.title) || '그림'}_${w.id.slice(-5)}.jpg`;
+        const blob = await DB.get('images', w.id);
+        if (!blob) { missing++; out.push({ ...w, kid: k?.name || '', file: null }); continue; }
+        entries.push({ name: file, data: new Uint8Array(await blob.arrayBuffer()) });
+        out.push({ ...w, kid: k?.name || '', age: ageLabel(ageAt(k?.birth, w.date)), file });
+      }
+      entries.push({ name: 'data.json', data: new TextEncoder().encode(JSON.stringify({ app: 'kids-art', version: 2, exportedAt: new Date().toISOString(), kids: S.kids, works: out }, null, 2)) });
+      btn.textContent = '파일 만드는 중…';
+      const url = URL.createObjectURL(makeZip(entries));
+      el('a', { href: url, download: `그림보관함-백업-${today()}.zip` }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      S.lastBackup = new Date().toISOString();
+      DB.put('meta', 'lastBackup', S.lastBackup).catch(() => {});
+      render();
+      btn.textContent = missing ? `저장됨 (${missing}점 누락)` : '다운로드 폴더에 저장됨';
+    } catch (e) {
+      btn.textContent = '백업 실패';
+      console.error(e);
+    }
+    setTimeout(() => { btn.textContent = label; btn.disabled = false; }, 3000);
+  }
+
+  function pickRestore() { const f = $('#restore'); f.value = ''; f.click(); }
+  $('#restore').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    const status = el('p', { class: 'hint', text: '백업 파일을 읽는 중…' });
+    openSheet([head('백업에서 복원'), status]);
+    try {
+      const files = await readZip(file);
+      const raw = files.get('data.json');
+      if (!raw) throw new Error('no data.json');
+      const data = JSON.parse(new TextDecoder().decode(raw));
+      let kids = 0, added = 0, skipped = 0, failed = 0;
+      for (const k of data.kids || []) {
+        if (!k.id || kidOf(k.id)) continue;
+        const kid = { id: k.id, name: k.name || '아이', birth: k.birth || '', color: k.color || 0, order: k.order || Date.now() };
+        await DB.put('kids', kid.id, kid); S.kids.push(kid); kids++;
+      }
+      S.kids.sort((a, b) => (a.order || 0) - (b.order || 0));
+      const works = data.works || [];
+      for (let i = 0; i < works.length; i++) {
+        const x = works[i];
+        status.textContent = `그림 ${i + 1} / ${works.length} 복원하는 중…`;
+        if (!x.id || !x.date || S.works.some(w => w.id === x.id)) { skipped++; continue; }
+        const bytes = x.file && files.get(x.file);
+        if (!bytes) { failed++; continue; }
+        try {
+          const image = new Blob([bytes], { type: 'image/jpeg' });
+          const thumb = await scaled(image, 640, 0.8);
+          const w = { id: x.id, kidId: x.kidId, date: x.date, title: x.title || '', quote: x.quote || '', note: x.note || '', w: x.w || thumb.w, h: x.h || thumb.h, starred: !!x.starred, createdAt: x.createdAt || new Date().toISOString() };
+          await DB.addWork(w, image, thumb.blob);
+          S.works.push(w); added++;
+        } catch (err) { console.error(err); failed++; if (err && err.name === 'QuotaExceededError') break; }
+      }
+      if (added) persist();
+      render();
+      status.textContent = `아이 ${kids}명, 그림 ${added}점을 복원했어요.` + (skipped ? ` 이미 있던 ${skipped}점은 건너뛰었어요.` : '') + (failed ? ` ${failed}점은 복원하지 못했어요.` : '');
+    } catch (err) {
+      console.error(err);
+      status.textContent = '이 파일은 복원할 수 없어요. 그림 보관함에서 받은 백업 ZIP인지 확인해 주세요.';
+    }
+  });
+
+  // ---------- wiring ----------
+  $('#btn-add').addEventListener('click', () => pickFiles(false));
+  $('#btn-camera').addEventListener('click', () => pickFiles(true));
+  $('#btn-kids').addEventListener('click', openKids);
+  $('#btn-backup').addEventListener('click', backup);
+  const setView = v => { S.view = v; try { history.replaceState(null, '', '#' + v); } catch {} render(); };
+  $('#tab-album').addEventListener('click', () => setView('album'));
+  $('#tab-growth').addEventListener('click', () => setView('growth'));
+  if (location.hash === '#growth') S.view = 'growth';
+
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(console.warn);
+
+  (async () => {
+    if (!window.indexedDB) { S.note = '이 브라우저에서는 저장할 수 없어요. Chrome으로 열어 주세요.'; return render(); }
+    try { await loadAll(); S.ready = true; }
+    catch (e) { console.error(e); S.note = '저장된 그림을 불러오지 못했어요. 시크릿 창이라면 일반 창으로 열어 주세요.'; }
+    render();
+  })();
+})();
+</script>
+</body>
+</html>
